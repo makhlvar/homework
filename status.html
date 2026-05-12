@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Switch</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a2e;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .badge {
+            padding: 40px 100px;
+            font-size: 64px;
+            font-weight: 900;
+            color: white;
+            border-radius: 24px;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            background: #f44336;
+            box-shadow: 0 10px 40px rgba(244,67,54,0.6);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .on {
+            background: #4CAF50;
+            box-shadow: 0 10px 40px rgba(76,175,80,0.6);
+        }
+        .info {
+            position: fixed;
+            bottom: 30px;
+            color: #666;
+            font-size: 14px;
+            font-family: monospace;
+            text-align: center;
+        }
+        code {
+            background: #0f3460;
+            color: #e94560;
+            padding: 3px 8px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="badge" id="badge">STATUS: OFF</div>
+    <div class="info">
+        Добавьте в адресную строку:
+
+        <code>?status=on</code> или <code>?status=off</code>
+    </div>
+
+    <script>
+        const p = new URLSearchParams(window.location.search);
+        const s = p.get('status');
+        const badge = document.getElementById('badge');
+        if (s === 'on') {
+            badge.textContent = 'STATUS: ON';
+            badge.classList.add('on');
+        } else {
+            badge.textContent = 'STATUS: OFF';
+            badge.classList.remove('on');
+        }
+    </script>
+</body>
+</html>
