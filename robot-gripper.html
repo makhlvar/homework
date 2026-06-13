@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Роборука CD4000 • Управление</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-panel: #16213e;
+            --bg-dark: #0f3460;
+            --accent-grip: #e94560;
+            --accent-release: #0f3460;
+            --accent-reset: #533483;
+            --accent-connect: #1a8a3f;
+            --success-bg: #1b4b2c;
+            --success-text: #69f0ae;
+            --error-bg: #4b1b1b;
+            --error-text: #ff6b6b;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+        }
+
+        .control-panel {
+            background: var(--bg-panel);
+            padding: clamp(20px, 5vw, 40px);
+            border-radius: 30px;
+            text-align: center;
+            color: var(--text-primary);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            width: min(500px, 90vw);
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            background: var(--bg-dark);
+            transition: all 0.3s ease;
+        }
+
+        .status-badge .indicator-light {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+            transition: all 0.3s ease;
+        }
+
+        .status-badge.ready {
+            background: var(--bg-dark);
+        }
+
+        .status-badge.ready .indicator-light {
+            background: #69f0ae;
+            box-shadow: 0 0 15px #69f0ae;
+        }
+
+        .status-badge.gripped {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .status-badge.gripped .indicator-light {
+            background: #69f0ae;
+            box-shadow: 0 0 15px #69f0ae;
+        }
+
+        .status-badge.moving {
+            background: var(--bg-dark);
+            color: #ffd700;
+        }
+
+        .status-badge.moving .indicator-light {
+            background: #ffd700;
+            box-shadow: 0 0 15px #ffd700;
+            animation: pulse 0.5s infinite;
+        }
+
+        .status-badge.released {
+            background: var(--error-bg);
+            color: var(--error-text);
+        }
+
+        .status-badge.released .indicator-light {
+            background: #ff6b6b;
+            box-shadow: 0 0 15px #ff6b6b;
+        }
+
+        .status-badge.fault {
+            background: var(--error-bg);
+            color: var(--error-text);
+            animation: blink 0.5s infinite;
+        }
+
+        .status-badge.fault .indicator-light {
+            background: #ff6b6b;
+            box-shadow: 0 0 15px #ff6b6b;
+        }
+
+        @keyframes pulse {
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes blink {
+            50% { opacity: 0.5; }
+        }
+
+        .toggleButton {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            padding: 15px 30px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 10px 0;
+            font-weight: bold;
+            transition: all 0.15s ease;
+            width: 100%;
+position: relative;
+            overflow: hidden;
+        }
+
+        .toggleButton:hover:not(:disabled) {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+
+        .toggleButton:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        .toggleButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .toggleButton.grip {
+            background: var(--accent-grip);
+            color: var(--text-primary);
+        }
+
+        .toggleButton.reset {
+            background: var(--accent-reset);
+            color: var(--text-primary);
+        }
+
+        .connectButton {
+            background: var(--accent-connect);
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            padding: 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 10px 0;
+            font-weight: bold;
+            transition: all 0.15s ease;
+            width: 100%;
+        }
+
+        .connectButton:hover {
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+        }
+
+        .connectButton:active {
+            transform: scale(0.95);
+        }
+
+        .steps-input {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .steps-input input {
+            width: 80px;
+            padding: 12px;
+            font-size: 1.5rem;
+            text-align: center;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        .steps-input input:focus {
+            outline: none;
+            border-color: var(--accent-connect);
+            box-shadow: 0 0 0 3px rgba(26, 138, 63, 0.2);
+        }
+
+        .steps-input label {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            user-select: none;
+        }
+
+        .connection-info {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .connection-info.connected {
+            background: #1a3a1a;
+            color: var(--success-text);
+        }
+
+        .connection-info.disconnected {
+            background: #3a1a1a;
+            color: var(--error-text);
+        }
+
+        .url-hint {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: left;
+            line-height: 1.6;
+        }
+
+        .url-hint code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3px 8px;
+            border-radius: 5px;
+            color: #69f0ae;
+        }
+
+        max-width: 480px {
+            .control-panel {
+                border-radius: 20px;
+            }
+            
+            .toggleButton, .connectButton {
+                padding: 12px 20px;
+                margin: 8px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="control-panel">
+        <h1>Роборука CD4000</h1>
+        <p class="subtitle">Панель управления через Arduino</p>
+
+        <div class="status-badge" id="statusBadge">
+            <span class="indicator-light"></span>
+            <span id="statusText">ОЖИДАНИЕ</span>
+        </div>
+
+        <div class="steps-input">
+            <label for="stepsInput">Шаги (1-255):</label>
+            <input type="number" id="stepsInput" value="100" min="1" max="255">
+        </div>
+
+        <button class="toggleButton grip" id="g
+ripBtn" disabled>СЖАТЬ (ПУСК)</button>
+        <button class="toggleButton reset" id="resetBtn" disabled>СБРОС</button>
+
+        <button class="connectButton" id="connectBtn">Подключить Arduino</button>
+
+        <div class="connection-info disconnected" id="connectionInfo">Не подключено</div>
+
+        <div class="url-hint">
+            <strong>Доступные команды (URL):</strong>
+
+            <code>?status=grip</code> — сжать роборуку
+
+            <code>?status=release</code> — разжать роборуку
+        </div>
+    </div>
+
+    <script>
+        const STATES = {
+            READY: { text: 'ГОТОВА', class: 'ready' },
+            MOVING: { text: 'ДВИЖЕНИЕ...', class: 'moving' },
+            GRIPPED: { text: 'СЖАТА', class: 'gripped' },
+            RELEASED: { text: 'РАЗЖАТА', class: 'released' },
+            FAULT: { text: 'АВАРИЯ!', class: 'fault' },
+            DISCONNECTED: { text: 'ОЖИДАНИЕ', class: '' }
+        };
+
+        const COMMANDS = {
+            PING: 0x00,
+            GRIP: 0x01,
+            RESET: 0x02,
+            SET_STEPS: 0x03
+        };
+
+        class RobotController {
+            constructor() {
+                this.port = null;
+                this.writer = null;
+                this.reader = null;
+                this.isConnected = false;
+                
+                this.elements = {
+                    gripBtn: document.getElementById('gripBtn'),
+                    resetBtn: document.getElementById('resetBtn'),
+                    connectBtn: document.getElementById('connectBtn'),
+                    statusBadge: document.getElementById('statusBadge'),
+                    statusText: document.getElementById('statusText'),
+                    connectionInfo: document.getElementById('connectionInfo'),
+                    stepsInput: document.getElementById('stepsInput')
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.checkURLStatus();
+            }
+            
+            setupEventListeners() {
+                const { gripBtn, resetBtn, connectBtn, stepsInput } = this.elements;
+                
+                gripBtn.addEventListener('click', () => this.handleGrip());
+                resetBtn.addEventListener('click', () => this.sendCommand(COMMANDS.RESET));
+                connectBtn.addEventListener('click', () => this.toggleConnection());
+                stepsInput.addEventListener('change', () => this.sendSteps());
+                
+                stepsInput.addEventListener('input', (e) => {
+                    const value = parseInt(e.target.value);
+                    if (value < 1) e.target.value = 1;
+                    if (value > 255) e.target.value = 255;
+                });
+                
+                window.addEventListener('popstate', () => this.checkURLStatus());
+                window.addEventListener('focus', () => this.checkURLStatus());
+            }
+            
+            checkURLStatus() {
+                const params = new URLSearchParams(window.location.search);
+                const status = params.get('status');
+                
+                if (status === 'grip' && this.isConnected) {
+                    this.handleGrip();
+                } else if (status === 'release' && this.isConnected) {
+                    this.sendCommand(COMMANDS.RESET);
+                }
+            }
+            
+            async toggleConnection() {
+                if (this.isConnected) {
+                    await this.disconnect();
+                } else {
+                    await this.connect();
+                }
+            }
+            
+            async connect() {
+                try {
+                    this.port = await navigator.serial.requestPort();
+                    await this.port.open({ baudRate: 115200 });
+                    
+                    this.writer = this.port.writable.getWriter();
+                    this.isConnected = true;
+this.startReading();
+                    this.updateUIForConnection(true);
+                    await this.sendSteps();
+                    
+                } catch (error) {
+                    this.showError(`Ошибка подключения: ${error.message}`);
+                }
+            }
+            
+            async disconnect() {
+                try {
+                    if (this.reader) {
+                        await this.reader.cancel();
+                        this.reader.releaseLock();
+                        this.reader = null;
+                    }
+                    
+                    if (this.writer) {
+                        await this.writer.close();
+                        this.writer.releaseLock();
+                        this.writer = null;
+                    }
+                    
+                    if (this.port) {
+                        await this.port.close();
+                        this.port = null;
+                    }
+                    
+                    this.isConnected = false;
+                    this.updateUIForConnection(false);
+                    
+                } catch (error) {
+                    console.error('Ошибка отключения:', error);
+                }
+            }
+            
+            async startReading() {
+                const textDecoder = new TextDecoder();
+                
+                try {
+                    this.reader = this.port.readable.getReader();
+                    
+                    while (true) {
+                        const { value, done } = await this.reader.read();
+                        if (done) break;
+                        
+                        const text = textDecoder.decode(value);
+                        this.processIncomingData(text);
+                    }
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error('Ошибка чтения:', error);
+                        this.showError('Потеряна связь с устройством');
+                        await this.disconnect();
+                    }
+                }
+            }
+            
+            processIncomingData(text) {
+                console.log('Получено:', text);
+                
+                for (const [status, config] of Object.entries(STATES)) {
+                    if (text.includes(status)) {
+                        this.updateStatus(config.text, config.class);
+                        break;
+                    }
+                }
+            }
+            
+            async handleGrip() {
+                await this.sendSteps();
+                setTimeout(() => this.sendCommand(COMMANDS.GRIP), 100);
+            }
+            
+            async sendCommand(command) {
+                if (!this.writer || !this.isConnected) return;
+                
+                try {
+                    const data = new Uint8Array([command]);
+                    await this.writer.write(data);
+                } catch (error) {
+                    console.error('Ошибка отправки команды:', error);
+                    this.showError('Ошибка отправки команды');
+                }
+            }
+            
+            async sendSteps() {
+                if (!this.writer || !this.isConnected) return;
+                
+                const steps = parseInt(this.elements.stepsInput.value);
+                if (isNaN(steps) || steps < 1 || steps > 255) {
+                    this.showError('Некорректное значение шагов');
+                    return;
+                }
+                
+                try {
+                    const data = new Uint8Array([COMMANDS.SET_STEPS, steps]);
+                    await this.writer.write(data);
+                } catch (error) {
+                    console.error('Ошибка отправки шагов:', error);
+                    this.showError('Ошибка установки шагов');
+                }
+            }
+            
+            updateUIForConnection(connected) {
+                const { gripBtn,resetBtn, connectBtn, connectionInfo } = this.elements;
+                
+                gripBtn.disabled = !connected;
+                resetBtn.disabled = !connected;
+                connectBtn.textContent = connected ? 'Отключить' : 'Подключить Arduino';
+                connectionInfo.textContent = connected ? 'Arduino готов' : 'Не подключено';
+                connectionInfo.className = `connection-info ${connected ? 'connected' : 'disconnected'}`;
+                
+                if (!connected) {
+                    this.updateStatus('ОЖИДАНИЕ', '');
+                }
+            }
+            
+            updateStatus(text, className) {
+                const { statusText, statusBadge } = this.elements;
+                statusText.textContent = text;
+                statusBadge.className = `status-badge ${className}`;
+            }
+            
+            showError(message) {
+                const { connectionInfo } = this.elements;
+                connectionInfo.textContent = message;
+                connectionInfo.className = 'connection-info disconnected';
+                
+                setTimeout(() => {
+                    if (this.isConnected) {
+                        this.updateUIForConnection(true);
+                    }
+                }, 3000);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            new RobotController();
+        });
+    </script>
+</body>
+</html>
