@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Роборука CD4000 • Управление</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-panel: #16213e;
+            --bg-dark: #0f3460;
+            --accent-grip: #e94560;
+            --accent-release: #0f3460;
+            --accent-reset: #533483;
+            --accent-connect: #1a8a3f;
+            --success-bg: #1b4b2c;
+            --success-text: #69f0ae;
+            --error-bg: #4b1b1b;
+            --error-text: #ff6b6b;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            padding: 20px;
+        }
+        .control-panel {
+            background: var(--bg-panel);
+            padding: clamp(20px, 5vw, 40px);
+            border-radius: 30px;
+            text-align: center;
+            color: var(--text-primary);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            width: min(500px, 90vw);
+        }
+        h1 { margin-bottom: 10px; font-size: clamp(1.5rem, 4vw, 2rem); }
+        .subtitle { color: var(--text-secondary); margin-bottom: 30px; font-size: 0.9rem; }
+        .status-badge {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            background: var(--bg-dark);
+            transition: all 0.3s ease;
+        }
+        .status-badge .indicator-light {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+            transition: all 0.3s ease;
+        }
+        .status-badge.READY .indicator-light { background: #69f0ae; box-shadow: 0 0 15px #69f0ae; }
+        .status-badge.GRIPPED { background: var(--success-bg); color: var(--success-text); }
+        .status-badge.GRIPPED .indicator-light { background: #69f0ae; box-shadow: 0 0 15px #69f0ae; }
+        .status-badge.MOVING { background: var(--bg-dark); color: #ffd700; }
+        .status-badge.MOVING .indicator-light { background: #ffd700; box-shadow: 0 0 15px #ffd700; animation: pulse 0.5s infinite; }
+        .status-badge.RELEASED { background: var(--error-bg); color: var(--error-text); }
+        .status-badge.RELEASED .indicator-light { background: #ff6b6b; box-shadow: 0 0 15px #ff6b6b; }
+        .status-badge.FAULT { background: var(--error-bg); color: var(--error-text); animation: blink 0.5s infinite; }
+        .status-badge.FAULT .indicator-light { background: #ff6b6b; box-shadow: 0 0 15px #ff6b6b; }
+        @keyframes pulse { 50% { opacity: 0.5; } }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .btn {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            padding: 15px 30px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            margin: 10px 0;
+            font-weight: bold;
+            transition: all 0.15s ease;
+            width: 100%;
+            color: var(--text-primary);
+        }
+        .btn:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-2px); }
+        .btn:active:not(:disabled) { transform: scale(0.95); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-grip { background: var(--accent-grip); }
+        .btn-release { background: var(--accent-reset); }
+        .btn-connect { background: var(--accent-connect); font-size: 1.2rem; padding: 15px; }
+        .steps-input {
+            margin: 20px 0;
+            display: flex;
+            align-items: c
+enter;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .steps-input input {
+            width: 80px;
+            padding: 12px;
+            font-size: 1.5rem;
+            text-align: center;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        .steps-input input:focus { outline: none; border-color: var(--accent-connect); box-shadow: 0 0 0 3px rgba(26,138,63,0.2); }
+        .steps-input label { font-size: 1.2rem; color: var(--text-secondary); user-select: none; }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        .info.connected { background: #1a3a1a; color: var(--success-text); }
+        .info.disconnected { background: #3a1a1a; color: var(--error-text); }
+        .url-hint {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: left;
+            line-height: 1.6;
+        }
+        .url-hint code {
+            background: rgba(255,255,255,0.1);
+            padding: 3px 8px;
+            border-radius: 5px;
+            color: #69f0ae;
+        }
+        max-width: 480px {
+            .control-panel { border-radius: 20px; }
+            .btn { padding: 12px 20px; margin: 8px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="control-panel">
+        <h1>Роборука CD4000</h1>
+        <p class="subtitle">Панель управления</p>
+        <div class="status-badge" id="statusBadge">
+            <span class="indicator-light"></span>
+            <span id="statusText">ОЖИДАНИЕ</span>
+        </div>
+        <div class="steps-input">
+            <label for="stepsInput">Шаги (1-255):</label>
+            <input type="number" id="stepsInput" value="100" min="1" max="255">
+        </div>
+        <button class="btn btn-grip" id="gripBtn">СЖАТЬ (ПУСК)</button>
+        <button class="btn btn-release" id="resetBtn">СБРОС</button>
+        <button class="btn btn-connect" id="connectBtn">Подключить</button>
+        <div class="info disconnected" id="connectionInfo">Не подключено</div>
+        <div class="url-hint">
+            <strong>Доступные команды (URL):</strong>
+
+            <code>/grip</code> — сжать роборуку
+
+            <code>/release</code> — разжать роборуку
+
+            <code>/status</code> — получить статус
+
+            <code>/set_steps?value=150</code> — установить шаги
+        </div>
+    </div>
+    <script>
+        const STATUS_TEXTS = {
+            'READY': 'ГОТОВА',
+            'MOVING': 'ДВИЖЕНИЕ...',
+            'GRIPPED': 'СЖАТА',
+            'RELEASED': 'РАЗЖАТА',
+            'FAULT': 'АВАРИЯ!',
+            'DISCONNECTED': 'ОЖИДАНИЕ'
+        };
+        let isConnected = false;
+        async function checkStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                updateUI(data.status, data.is_pressed);
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+        async function sendCommand(url) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                updateUI(data.status, data.is_pressed);
+            } catch (error) {
+                console.error('Ошибка:', error);
+            }
+        }
+        function updateUI(status, isPressed) {
+            document.getElementById('statusText').textContent = STATUS_TEXTS[status] || status;
+            document.getElementById
+('statusBadge').className = 'status-badge ' + status;
+            const url = new URL(window.location);
+            if (isPressed) {
+                url.searchParams.set('status', 'grip');
+            } else {
+                url.searchParams.set('status', 'release');
+            }
+            window.history.pushState({}, '', url);
+        }
+        document.getElementById('gripBtn').addEventListener('click', () => sendCommand('/grip'));
+        document.getElementById('resetBtn').addEventListener('click', () => sendCommand('/release'));
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            if (isConnected) {
+                await fetch('/disconnect');
+                isConnected = false;
+                document.getElementById('connectionInfo').textContent = 'Не подключено';
+                document.getElementById('connectionInfo').className = 'info disconnected';
+                document.getElementById('connectBtn').textContent = 'Подключить';
+                updateUI('DISCONNECTED', false);
+            } else {
+                await fetch('/connect');
+                isConnected = true;
+                document.getElementById('connectionInfo').textContent = 'Подключено';
+                document.getElementById('connectionInfo').className = 'info connected';
+                document.getElementById('connectBtn').textContent = 'Отключить';
+            }
+        });
+        document.getElementById('stepsInput').addEventListener('change', (e) => {
+            fetch('/set_steps?value=' + e.target.value);
+        });
+        setInterval(checkStatus, 1000);
+        checkStatus();
+    </script>
+</body>
+</html>
